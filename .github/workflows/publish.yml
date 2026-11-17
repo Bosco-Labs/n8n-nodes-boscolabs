@@ -1,0 +1,77 @@
+# Publishes n8n-nodes-boscolabs to npm with a provenance statement. n8n only verifies community
+# nodes published from GitHub Actions with npm provenance, so this workflow is the only way the
+# package is released. `npm run release` is n8n's own path: it runs the n8n linter and the
+# build, then `npm publish` with provenance.
+#
+# Auth: npm trusted publishing (GitHub OIDC, no token). On npmjs.com: the package, Settings,
+# Trusted Publisher, GitHub Actions: owner Bosco-Labs, repository n8n-nodes-boscolabs, workflow
+# filename publish.yml.
+#
+# Release: set "version" in package.json and VERSION in nodes/BoscoLabs/request.ts to the same
+# number on main. A push to main that changes package.json or this file publishes that version
+# if npm does not have it yet; so does a run by hand or the tag v<version>. A version npm already
+# has is skipped, so a second run does no harm. Pull requests run every step with
+# `npm publish --dry-run` (`npm pack --dry-run` when npm already has the version).
+name: Publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"] # must equal the version in package.json
+    paths: # branch pushes only; tag pushes ignore this filter
+      - package.json
+      - .github/workflows/publish.yml
+  pull_request:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # npm provenance and trusted publishing
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: The tag must equal the package version
+        if: github.ref_type == 'tag'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $version" >&2
+            exit 1
+          fi
+      - run: npm ci --no-audit --no-fund
+      - run: npm test # build + offline tests (mocked HTTP), incl. VERSION == package.json
+      - run: npm install -g npm@latest # trusted publishing needs npm 11.5.1 or later
+      - name: Is this version on npm already?
+        id: npm
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if npm view "n8n-nodes-boscolabs@$version" version >/dev/null 2>&1; then
+            echo "n8n-nodes-boscolabs@$version is on npm already, nothing to publish"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Dry run (pull requests publish nothing)
+        if: github.event_name == 'pull_request'
+        run: |
+          npm run lint
+          npm run build
+          if [ "$PUBLISHED" = "true" ]; then
+            npm pack --dry-run
+          else
+            npm publish --dry-run
+          fi
+        env:
+          RELEASE_MODE: "true"
+          PUBLISHED: ${{ steps.npm.outputs.published }}
+      - name: Lint, build and publish with provenance
+        if: github.event_name != 'pull_request' && steps.npm.outputs.published != 'true'
+        run: npm run release

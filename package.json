@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-boscolabs",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "n8n community node for the Bosco Labs API: counterparty (KYB) checks, company reports and accounts, EU VAT and IBAN validation, sanctions screening and new UK companies, from official registers with a source URL on every row.",
 	"license": "MIT",
 	"homepage": "https://boscolabs.dev",

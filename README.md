@@ -18,7 +18,8 @@ Community Nodes > Install**, then enter the package name.
 Paid operations need a Bosco Labs API key (prepaid credits, no subscription).
 
 1. Get a key at <https://boscolabs.dev/api.html#key>. New keys come with $5 free credit, once
-   per verified e-mail, no card.
+   per verified e-mail and network a month, no card (a later key from the same network that
+   month starts at $0).
 2. In n8n, create a **Bosco Labs API** credential and paste the key (it starts with `bl_live_`).
 3. n8n tests the credential by reading your balance (`GET /v1/me`). That costs nothing.
 
@@ -39,7 +40,13 @@ else. **Question > Plan** runs without a credential.
 
 Prices are charged from the credits of your key, per result. **Empty and failed calls are
 free**: a call that returns no rows, is refused or runs into a source that does not answer
-costs nothing. The current prices are also at <https://api.boscolabs.dev/v1/tools?compact=true>.
+costs nothing. A company check or report is also free when one of its sources timed out,
+failed or asked us to slow down; you still get the partial answer, up to 20 such free partial
+answers per key per UTC day. In Counterparty Check the free sanctions screen of an ambiguous
+or unknown name counts as one of them. After that such a company is not checked and not
+charged, and such a name is not screened (the message says when the count resets at 00:00
+UTC). The current prices are also at
+<https://api.boscolabs.dev/v1/tools?compact=true>.
 
 ### Output
 
@@ -47,9 +54,11 @@ costs nothing. The current prices are also at <https://api.boscolabs.dev/v1/tool
   `{{ $json.summary.fail }}`. A call without results returns no items; the node then shows
   the API's explanation as a hint.
 - **Simplify** (on by default) keeps at most 10 fields per row, always with the source link
-  where the row has one. For a counterparty check that is `query`, `status`, `company`,
-  `checks`, `summary`, `candidates`, `sanctions_hits`, `message`, `warnings` and `source_url`.
-  Turn it off for every field.
+  where the row has one. For a counterparty check that is `query`, `status`, `charged`,
+  `company`, `checks`, `summary`, `candidates`, `sanctions_hits`, `message` and `source_url`
+  (`charged: false` with a "Not charged: ..." `message` is a free, partial answer; the call's
+  warnings are shown as hints). A company report keeps `failed_sources`: not empty means a
+  source failed and the report was free. Turn Simplify off for every field.
 - **Options > Return Full Response** returns one item with the whole API answer: `rows`,
   `count`, `warnings`, `message`, `charged_usd` and `balance_usd`.
 - The node runs once per input item. Fields that take a list accept values separated by
@@ -126,7 +135,8 @@ A counterparty check reads what official open sources publish. That differs by c
 | Latvia | Enterprise Register open data | not read | the register's open data |
 | Germany | GLEIF (companies with an LEI) | not available | insolvenzbekanntmachungen.de |
 | Netherlands | GLEIF (companies with an LEI) | not available | Centraal Insolventieregister |
-| Denmark, United States, other countries | GLEIF, SEC | not available | not checked (`unverified`) |
+| United States | GLEIF, SEC | not available | the company's own SEC Form 8-K reports, Item 1.03 (Bankruptcy or Receivership) |
+| Denmark, other countries | GLEIF | not available | not checked (`unverified`) |
 
 - Sanctions on the company itself, the LEI, VAT (EU member states and Northern Ireland, via
   VIES) and IBAN checks work for every country.

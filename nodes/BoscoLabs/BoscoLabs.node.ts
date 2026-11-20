@@ -138,8 +138,10 @@ export class BoscoLabs implements INodeType {
 				for (const warning of warnings) {
 					hints.push({ message: String(warning), type: 'warning', location: 'outputPane' });
 				}
-				if (rows.length === 0 && typeof body.message === 'string' && body.message !== '') {
-					hints.push({ message: body.message, type: 'info', location: 'outputPane' });
+				// "Not charged: ...": a partial answer that is free because a source failed
+				const message = typeof body.message === 'string' ? body.message : '';
+				if (message !== '' && (rows.length === 0 || /not charged/i.test(message))) {
+					hints.push({ message, type: 'info', location: 'outputPane' });
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {

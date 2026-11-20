@@ -179,6 +179,32 @@ test('output: no rows gives no items and passes the API message on as a hint', a
 	assert.match(hints[1].message, /Nothing was charged/);
 });
 
+test('output: a free partial answer keeps `charged` and `failed_sources` and says so', async () => {
+	const free = {
+		...COUNTERPARTY_ROW,
+		charged: false,
+		failed_sources: ['The Gazette'],
+		message: 'Not charged: The Gazette could not be read, so this answer is incomplete.',
+	};
+	const { output, hints } = await run({
+		params: { resource: 'company', operation: 'checkCounterparty', query: 'Carillion plc' },
+		respond: () =>
+			ok(
+				envelope('counterparty-check', [free], {
+					message: 'CARILLION PLC: 3 pass, 2 fail; not charged',
+					charged_usd: 0,
+				}),
+			),
+	});
+	assert.equal(output[0].json.charged, false);
+	assert.match(output[0].json.message, /^Not charged/);
+	assert.deepEqual(
+		hints.map((h) => [h.type, h.message]),
+		[['info', 'CARILLION PLC: 3 pass, 2 fail; not charged']],
+	);
+	assert.ok(SIMPLE_FIELDS['company-check'].includes('failed_sources'));
+});
+
 test('refused input: the API message is shown with how to fix it', async () => {
 	const { error, output } = await run({
 		params: { resource: 'company', operation: 'getReport', query: 'zzzz no such company' },

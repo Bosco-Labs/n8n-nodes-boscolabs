@@ -130,7 +130,7 @@ export const operationProperties: INodeProperties[] = [
 
 const pricingNotice: INodeProperties = {
 	displayName:
-		'Charged per result from the prepaid credits of your Bosco Labs API key. Calls that return nothing or do not succeed are free.',
+		'Charged per result from the prepaid credits of your Bosco Labs API key. Calls that return nothing or do not succeed are free, and so is a company check or report for which a source we asked failed (you still get the partial answer, within a daily limit) and a sanctions screen for which a list could not be loaded.',
 	name: 'pricingNotice',
 	type: 'notice',
 	displayOptions: { show: { resource: PAID_RESOURCES } },

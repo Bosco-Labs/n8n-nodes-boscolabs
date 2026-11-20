@@ -4,7 +4,7 @@ import { jsonParse } from 'n8n-workflow';
 export const API_BASE_URL = 'https://api.boscolabs.dev';
 
 /** Sent as User-Agent so the API can count calls per client; keep in step with package.json. */
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 export const USER_AGENT = `n8n-nodes-boscolabs/${VERSION}`;
 
 /** Reads one node parameter of the current item; `fallback` is returned when it is not set. */
@@ -269,16 +269,17 @@ export function buildRequest(
 
 /** Fields kept per row when Simplify is on: at most 10, the source link included where rows have one. */
 export const SIMPLE_FIELDS: Record<string, string[]> = {
+	// the call's warnings are shown as hints, so `charged` takes their place in the row
 	'counterparty-check': [
 		'query',
 		'status',
+		'charged',
 		'company',
 		'checks',
 		'summary',
 		'candidates',
 		'sanctions_hits',
 		'message',
-		'warnings',
 		'source_url',
 	],
 	'company-check': [
@@ -290,8 +291,8 @@ export const SIMPLE_FIELDS: Record<string, string[]> = {
 		'candidates',
 		'not_found',
 		'warnings',
+		'failed_sources',
 		'sources',
-		'retrieved_at',
 	],
 	'company-accounts': [
 		'country',
